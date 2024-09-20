@@ -1,0 +1,51 @@
+.modal-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.5); /* затемнение фона */
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  max-width: 300px;
+  width: 100%;
+}
+
+h2 {
+  margin-bottom: 20px;
+}
+
+.buttons {
+  display: flex;
+  justify-content: space-around;
+}
+
+/* button {
+  
+} */
+
+/* .like-button {
+  
+} */
+
+.like-button:hover {
+  background-color: #45a049;
+}
+
+.dislike-button {
+  background-color: #f44336;
+  color: white;
+}
+
+.dislike-button:hover {
+  background-color: #e53935;
+}
