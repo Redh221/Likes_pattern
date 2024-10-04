@@ -1,23 +1,17 @@
-// export interface IPubSub {
-//   // cache: any{};
-//   // cache: {};
-//   // cache: { [eventName: string]: EventCallback[] };
-//   subscribe(eventName: string, fn: EventCallback): void;
-//   unsubscribe(eventName: string, fn: EventCallback): void;
-//   publish(eventName: string, ...args: any[]): void;
-// }
 type ArgsFn = unknown;
-type EventCallback = (...args: ArgsFn[]) => void;
+
+type EventCallback = (...args: any[]) => void;
 type CacheType = {
   [eventName: string]: EventCallback[];
 };
 
-export class PubSub<T extends keyof CacheType> {
+export class PubSub<T extends string = string> {
   cache: CacheType;
   constructor() {
     this.cache = {};
   }
   subscribe(eventName: T, fn: EventCallback) {
+    console.log("sub");
     if (!this.cache[eventName]) {
       this.cache[eventName] = [];
     }
@@ -27,6 +21,7 @@ export class PubSub<T extends keyof CacheType> {
     }
   }
   unsubscribe(eventName: T, fn: EventCallback) {
+    console.log("unsub");
     if (this.cache[eventName] && this.cache[eventName].length > 0) {
       let findResult = this.cache[eventName].findIndex((item) => item === fn);
       if (findResult > -1) {
@@ -35,6 +30,7 @@ export class PubSub<T extends keyof CacheType> {
     }
   }
   publish(eventName: T, ...args: ArgsFn[]) {
+    console.log("publish");
     if (this.cache[eventName] && this.cache[eventName].length > 0) {
       this.cache[eventName].forEach((item) => item(...args));
     }
