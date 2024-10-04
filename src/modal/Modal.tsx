@@ -13,7 +13,7 @@ import {
 } from "../types/StoreTypes";
 import { StyledLikeButtonProps } from "../types/AppTypes";
 import { PubSub } from "../PubSubPattern";
-import { saveAllToLocalStorage } from "../reused functions/localStorageUtils";
+import { saveAllToLocalStorage } from "../reusedFunction/localStorageUtils";
 import { pubSub } from "../App";
 // interface ModalProps {
 //   pubSubProps: PubSub<string>; // Убедитесь, что тип соответствует ожидаемому
