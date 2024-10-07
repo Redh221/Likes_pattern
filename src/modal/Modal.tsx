@@ -1,6 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./Modal.css";
 import styled from "styled-components";
+import { useSelector, useDispatch } from "react-redux";
+import {
+  increment,
+  decrement,
+  incrementToAmount,
+} from "../redux/reducers/rootReducer";
+
 const StyledButton = styled.button`
   padding: 10px 20px;
   font-size: 16px;
@@ -9,22 +16,25 @@ const StyledButton = styled.button`
   cursor: pointer;
   transition: background-color 0.3s ease;
 `;
-const StyledLikeButton = styled(StyledButton)`
-  background-color: ${(props) =>
-    props.buttonStateProps === true ? "lightblue" : "blue"};
-  color: ${(props) => (props.buttonStateProps === true ? "red" : "white")};
+const StyledLikeButton = styled(StyledButton).attrs((props) => ({
+  isLiked: undefined, // Prevents isLiked from being passed to DOM
+}))`
+  background-color: ${(props) => (props.isLiked ? "lightblue" : "blue")};
+  color: ${(props) => (props.isLiked ? "red" : "white")};
 `;
 
 const Modal = ({ apiProps, pubSubProps }) => {
-  // const [likes, setLikes] = useState(0);
+  const likes = useSelector((state) => state.like?.likes);
+  console.log(likes);
+
   const [dislikes, setDislikes] = useState(0);
   const [buttonState, setButtonState] = useState(false);
-  const likesRef = useRef(0);
-
+  // const likesRef = useRef(0);
   const [showedLikes, setShowedLikes] = useState(0);
+  const dispatch = useDispatch();
   function formatNumber(par) {
     let formattedLikes;
-    likesRef.current = par;
+    dispatch(incrementToAmount(par));
     switch (true) {
       case par < 1000:
         formattedLikes = par;
@@ -45,10 +55,10 @@ const Modal = ({ apiProps, pubSubProps }) => {
 
   const handleLike = () => {
     if (buttonState === false) {
-      formatNumber(likesRef.current + 1);
+      formatNumber(likes + 1);
       setButtonState(true);
     } else if (buttonState === true) {
-      formatNumber(likesRef.current - 1);
+      formatNumber(likes - 1);
       setButtonState(false);
     }
   };
@@ -59,7 +69,6 @@ const Modal = ({ apiProps, pubSubProps }) => {
 
   useEffect(() => {
     pubSubProps.subscribe("fetch", console.log);
-
     apiProps().then((value: any) => {
       formatNumber(value.length + 9849);
       pubSubProps.publish("fetch", value);
@@ -71,7 +80,7 @@ const Modal = ({ apiProps, pubSubProps }) => {
       <div className="modal-content">
         <h2>Do you like this?</h2>
         <div className="buttons">
-          <StyledLikeButton buttonStateProps={buttonState} onClick={handleLike}>
+          <StyledLikeButton isLiked={buttonState} onClick={handleLike}>
             👍 Like {showedLikes}
           </StyledLikeButton>
           <button className="dislike-button" onClick={handleDislike}>
