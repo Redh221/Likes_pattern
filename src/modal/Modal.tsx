@@ -1,12 +1,23 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect } from "react";
 import "./Modal.css";
 import styled from "styled-components";
-import { useSelector, useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { decrementLikes, incrementLikes } from "../redux/reducers/LikeSlice";
+import ClipLoader from "react-spinners/ClipLoader";
+import ScaleLoader from "react-spinners/ScaleLoader";
 import {
-  increment,
-  decrement,
-  incrementToAmount,
-} from "../redux/reducers/rootReducer";
+  AppDispatch,
+  CurrentUserIdT,
+  likeStoreI,
+  RootState,
+} from "../types/StoreTypes";
+import { StyledLikeButtonProps } from "../types/AppTypes";
+import { PubSub } from "../PubSubPattern";
+import { saveAllToLocalStorage } from "../reusedFunction/localStorageUtils";
+import { pubSub } from "../App";
+// interface ModalProps {
+//   pubSubProps: PubSub<string>; // Убедитесь, что тип соответствует ожидаемому
+// }
 
 const StyledButton = styled.button`
   padding: 10px 20px;
@@ -16,76 +27,99 @@ const StyledButton = styled.button`
   cursor: pointer;
   transition: background-color 0.3s ease;
 `;
-const StyledLikeButton = styled(StyledButton).attrs((props) => ({
-  isLiked: undefined, // Prevents isLiked from being passed to DOM
-}))`
-  background-color: ${(props) => (props.isLiked ? "lightblue" : "blue")};
-  color: ${(props) => (props.isLiked ? "red" : "white")};
+
+const StyledLikeButton = styled(StyledButton).withConfig({
+  shouldForwardProp: (prop) => prop !== "buttonStateProps",
+})<StyledLikeButtonProps>`
+  background-color: ${(props) => (props.buttonStateProps ? "red" : "blue")};
+  color: ${(props) => (props.buttonStateProps === true ? "green" : "white")};
 `;
 
-const Modal = ({ apiProps, pubSubProps }) => {
-  const likes = useSelector((state) => state.like?.likes);
-  console.log(likes);
+const Modal: React.FC = () => {
+  const dispatch: AppDispatch = useDispatch();
+  const likesRedux = useSelector((state: RootState) => state.likeStore.likes);
+  const loadingLikeRedux = useSelector(
+    (state: RootState) => state.likeStore.isLoading
+  );
+  const isLikedRedux = useSelector(
+    (state: RootState) => state.likeStore.isLiked
+  );
+  const currentUserIdRedux = useSelector(
+    (state: RootState) => state.userStore.id
+  );
 
-  const [dislikes, setDislikes] = useState(0);
-  const [buttonState, setButtonState] = useState(false);
-  // const likesRef = useRef(0);
-  const [showedLikes, setShowedLikes] = useState(0);
-  const dispatch = useDispatch();
-  function formatNumber(par) {
+  const handleChangeLikes = () => {
+    if (!isLikedRedux) {
+      dispatch(incrementLikes(1));
+      pubSub.publish("sendLikes", currentUserIdRedux, true);
+    } else {
+      pubSub.publish("sendLikes", currentUserIdRedux, false);
+      dispatch(decrementLikes(1));
+    }
+  };
+  useEffect(() => {
+    pubSub.subscribe("sendLikes", saveAllToLocalStorage);
+
+    return () => {
+      pubSub.unsubscribe("sendLikes", saveAllToLocalStorage);
+    };
+  }, []);
+
+  function formatNumber(par: likeStoreI["likes"]) {
     let formattedLikes;
-    dispatch(incrementToAmount(par));
     switch (true) {
       case par < 1000:
         formattedLikes = par;
-        console.log("check1");
         break;
-      case par >= 1000:
-        formattedLikes = (Math.round(par / 100) / 10).toFixed(1) + "K"; // right way to round  / forces amount of decimal
-        console.log("check2");
+      case par >= 1000 && par < 10000:
+        formattedLikes = (Math.round(par / 100) / 10).toFixed(1) + "K";
         break;
-      case par > 10000:
-        formattedLikes = Math.round(par / 1000) + "K"; // right way to round
+      case par >= 10000:
+        formattedLikes = Math.round(par / 1000) + "K";
+        break;
+      default:
+        formattedLikes = par;
     }
-
-    if (formattedLikes != showedLikes) {
-      setShowedLikes(formattedLikes);
-    }
+    return formattedLikes;
   }
 
-  const handleLike = () => {
-    if (buttonState === false) {
-      formatNumber(likes + 1);
-      setButtonState(true);
-    } else if (buttonState === true) {
-      formatNumber(likes - 1);
-      setButtonState(false);
-    }
-  };
-
-  const handleDislike = () => {
-    // setDislikes(dislikes + 1);
-  };
-
-  useEffect(() => {
-    pubSubProps.subscribe("fetch", console.log);
-    apiProps().then((value: any) => {
-      formatNumber(value.length + 9849);
-      pubSubProps.publish("fetch", value);
-    });
-  }, []);
-
+  // saveAllToLocalStorage(currentUserIdRedux, false);
   return (
     <div className="modal-container">
       <div className="modal-content">
-        <h2>Do you like this?</h2>
+        {loadingLikeRedux ? (
+          <h2>
+            Loading
+            <ScaleLoader
+              style={{ marginLeft: "40px" }}
+              color="black"
+              loading={loadingLikeRedux}
+              height={10}
+              aria-label="Loading Spinner"
+              data-testid="loader"
+            />
+          </h2>
+        ) : (
+          <h2>Do you like this?</h2>
+        )}
         <div className="buttons">
-          <StyledLikeButton isLiked={buttonState} onClick={handleLike}>
-            👍 Like {showedLikes}
+          <StyledLikeButton
+            buttonStateProps={isLikedRedux}
+            onClick={handleChangeLikes}
+          >
+            {loadingLikeRedux ? (
+              <ClipLoader
+                color="yellow"
+                loading={loadingLikeRedux}
+                size={15}
+                aria-label="Loading Spinner"
+                data-testid="loader"
+              />
+            ) : (
+              `👍 Like ${formatNumber(likesRedux)}`
+            )}
           </StyledLikeButton>
-          <button className="dislike-button" onClick={handleDislike}>
-            ASD 👎 Dislike {dislikes}
-          </button>
+          <button className="dislike-button">ASD 👎 Dislike </button>
         </div>
       </div>
     </div>
@@ -93,5 +127,3 @@ const Modal = ({ apiProps, pubSubProps }) => {
 };
 
 export default Modal;
-
-// console.log(Math.round(1000) / 10);

@@ -1,25 +1,24 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import "./App.css";
 import Modal from "./modal/Modal";
+
+import { useDispatch } from "react-redux";
+import { apiRequestLikes } from "./redux/api/LikesAmount";
+import { apiRequestIsLiked } from "./redux/api/LikedStatus";
+import { AppDispatch } from "./types/StoreTypes";
 import { PubSub } from "./PubSubPattern";
-async function apiRequestLikes() {
-  try {
-    const response = await fetch("https://jsonplaceholder.typicode.com/posts");
-    const data = await response.json();
-    return data;
-  } catch (err) {
-    console.error("There was a problem with the fetch operation:", err);
-  }
-}
-const pubSub = new PubSub();
-apiRequestLikes().then((value) => value.length);
-console.log();
+export const pubSub = new PubSub();
 function App() {
-  // const [count, setCount] = useState(0);
+  const dispatch: AppDispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(apiRequestLikes());
+    dispatch(apiRequestIsLiked());
+  }, [dispatch]);
 
   return (
     <div>
-      <Modal apiProps={apiRequestLikes} pubSubProps={pubSub} />
+      <Modal />
     </div>
   );
 }
